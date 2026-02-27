@@ -9,7 +9,8 @@ std::string errorMessage(DWORD errorCode)
     LPSTR buffer = nullptr;
 
     auto outSize = FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr,
         errorCode,
         LANG_ENGLISH,
@@ -29,9 +30,17 @@ std::string errorMessage(DWORD errorCode)
 
 WindowsError::WindowsError(
     DWORD errorCode, std::string_view message, std::source_location sl)
-    : _message(std::format("{}:{}:{} ({}): {}: {} ({:x}): {}",
-        sl.file_name(), sl.line(), sl.column(), sl.function_name(),
-        message, errorCode, errorCode, errorMessage(errorCode)))
+    : _message(
+          std::format(
+              "{}:{}:{} ({}): {}: {} ({:x}): {}",
+              sl.file_name(),
+              sl.line(),
+              sl.column(),
+              sl.function_name(),
+              message,
+              errorCode,
+              errorCode,
+              errorMessage(errorCode)))
 { }
 
 const char* WindowsError::what() const noexcept

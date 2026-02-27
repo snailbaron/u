@@ -3,16 +3,15 @@
 #include <windows.h>
 
 #include <array>
-#include <cstring>
 #include <cstdlib>
-#include <iostream>
+#include <cstring>
 #include <format>
-
+#include <iostream>
 
 void sendCodePointInput(uint16_t codePoint)
 {
-    auto inputs = std::array<INPUT, 2>{ };
-    std::memset(inputs.data(), 0, sizeof(INPUT)* inputs.size());
+    auto inputs = std::array<INPUT, 2>{};
+    std::memset(inputs.data(), 0, sizeof(INPUT) * inputs.size());
 
     inputs.at(0).type = INPUT_KEYBOARD;
     inputs.at(0).ki.wScan = codePoint;
@@ -23,8 +22,7 @@ void sendCodePointInput(uint16_t codePoint)
     inputs.at(1).ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
 
     std::cerr << std::format("sending code point 0x{:x}\n", codePoint);
-    CHECK(SendInput(
-        (UINT)inputs.size(), inputs.data(), sizeof(INPUT)));
+    CHECK(SendInput((UINT)inputs.size(), inputs.data(), sizeof(INPUT)));
 }
 
 class Hooker {
@@ -40,7 +38,8 @@ public:
             return false;
         }
 
-        if (kbd.vkCode == 'U' && pressing && _keys.ctrlDown && _keys.shiftDown && !_active) {
+        if (kbd.vkCode == 'U' && pressing && _keys.ctrlDown &&
+            _keys.shiftDown && !_active) {
             _active = true;
             std::cerr << "activate\n";
             return true;
@@ -114,7 +113,8 @@ LRESULT CALLBACK hookProc(int nCode, WPARAM wparam, LPARAM lparam)
     return CallNextHookEx(NULL, nCode, wparam, lparam);
 }
 
-int main() try {
+int main()
+try {
     auto hook = CHECK(SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, NULL, 0));
 
     MSG msg;
