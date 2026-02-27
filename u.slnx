@@ -1,7 +1,14 @@
 <Solution>
   <Configurations>
+    <BuildType Name="Clang Debug" />
+    <BuildType Name="Clang Release" />
+    <BuildType Name="MSVC Debug" />
+    <BuildType Name="MSVC Release" />
     <Platform Name="x64" />
-    <Platform Name="x86" />
   </Configurations>
-  <Project Path="u.vcxproj" Id="934d9eff-5f76-4159-8712-9168ecbbe2a3" />
+  <Project Path="u.vcxproj" Id="934d9eff-5f76-4159-8712-9168ecbbe2a3">
+    <BuildType Solution="MSVC Debug|*" Project="Debug" />
+    <BuildType Solution="MSVC Release|*" Project="Release" />
+    <Platform Solution="Clang Release|*" Project="Win32" />
+  </Project>
 </Solution>
