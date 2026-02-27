@@ -7,6 +7,63 @@
 #include <cstring>
 #include <format>
 #include <iostream>
+#include <utility>
+
+class HookGuard {
+public:
+    HookGuard(const HookGuard&) = delete;
+    HookGuard& operator=(const HookGuard&) = delete;
+
+    HookGuard() = default;
+
+    HookGuard(int idHook, HOOKPROC hookProc)
+    {
+        hook(idHook, hookProc);
+    }
+
+    ~HookGuard()
+    {
+        if (_hook != NULL) {
+            UnhookWindowsHookEx(_hook);
+        }
+    }
+
+    HookGuard(HookGuard&& other) noexcept
+    {
+        swap(*this, other);
+    }
+
+    HookGuard& operator=(HookGuard&& other) noexcept
+    {
+        if (this != &other) {
+            reset();
+            swap(*this, other);
+        }
+        return *this;
+    }
+
+    void hook(int idHook, HOOKPROC hookProc)
+    {
+        reset();
+        _hook = CHECK(SetWindowsHookEx(idHook, hookProc, NULL, 0));
+    }
+
+    void reset()
+    {
+        if (_hook != NULL) {
+            CHECK(UnhookWindowsHookEx(_hook));
+            _hook = NULL;
+        }
+    }
+
+    friend void swap(HookGuard& lhs, HookGuard& rhs) noexcept
+    {
+        std::swap(lhs._hook, rhs._hook);
+    }
+
+private:
+    HHOOK _hook = NULL;
+};
 
 void sendCodePointInput(uint16_t codePoint)
 {
@@ -115,7 +172,7 @@ LRESULT CALLBACK hookProc(int nCode, WPARAM wparam, LPARAM lparam)
 
 int main()
 try {
-    auto hook = CHECK(SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, NULL, 0));
+    auto hook = HookGuard{WH_KEYBOARD_LL, hookProc};
 
     MSG msg;
     BOOL ret;
@@ -132,8 +189,6 @@ try {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-
-    CHECK(UnhookWindowsHookEx(hook));
 } catch (const std::exception& e) {
     std::cerr << e.what() << "\n";
     return EXIT_FAILURE;
