@@ -1,4 +1,5 @@
 #include "error.hpp"
+#include "popup.hpp"
 
 #include <windows.h>
 
@@ -8,9 +9,6 @@
 #include <format>
 #include <iostream>
 #include <utility>
-
-HWND _popup = NULL;
-std::string _popupText;
 
 class HookGuard {
 public:
@@ -101,7 +99,7 @@ public:
         if (kbd.vkCode == 'U' && pressing && _keys.ctrlDown &&
             _keys.shiftDown && !_active) {
             _active = true;
-            ShowWindow(_popup, SW_SHOWNOACTIVATE);
+            popup::show();
             return true;
         }
 
@@ -110,26 +108,25 @@ public:
         }
 
         if (kbd.vkCode >= '0' and kbd.vkCode <= '9') {
-            _popupText += (char)kbd.vkCode;
-            CHECK(InvalidateRect(_popup, NULL, FALSE));
-            CHECK(UpdateWindow(_popup));
+            popup::addDigit((char)kbd.vkCode);
             auto digit = kbd.vkCode - '0';
             _number = 16 * _number + digit;
         } else if (kbd.vkCode >= 'A' && kbd.vkCode <= 'F') {
-            _popupText += (char)kbd.vkCode;
-            CHECK(InvalidateRect(_popup, NULL, FALSE));
-            CHECK(UpdateWindow(_popup));
+            popup::addDigit((char)kbd.vkCode);
             auto digit = 10 + kbd.vkCode - 'A';
             _number = 16 * _number + digit;
+        } else if (kbd.vkCode == VK_BACK) {
+            popup::removeDigit();
+            _number /= 16;
         } else if (kbd.vkCode == VK_RETURN) {
             uint16_t codePoint = 0;
             if (_number >= 0 && _number <= 0xffff) {
                 codePoint = static_cast<uint16_t>(_number);
             }
             _active = false;
-            ShowWindow(_popup, SW_HIDE);
-            _popupText = "";
             _number = 0;
+            popup::hide();
+            popup::clear();
 
             std::cerr << std::format("code point: 0x{:x}\n", codePoint);
             if (codePoint > 0) {
@@ -177,56 +174,11 @@ LRESULT CALLBACK hookProc(int nCode, WPARAM wparam, LPARAM lparam)
     return CallNextHookEx(NULL, nCode, wparam, lparam);
 }
 
-LRESULT popupWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
-{
-    if (umsg == WM_PAINT) {
-        auto ps = PAINTSTRUCT{};
-        auto hdc = CHECK(BeginPaint(_popup, &ps));
-
-        auto rect = RECT{};
-        CHECK(GetClientRect(_popup, &rect));
-
-        DrawTextA(hdc, _popupText.c_str(), (int)_popupText.length(), &rect, 0);
-
-        EndPaint(_popup, &ps);
-        return 0;
-    }
-
-    return DefWindowProc(hwnd, umsg, wparam, lparam);
-}
 
 int WINAPI WinMain(
     HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 try {
-    auto popupWindowClassInfo = WNDCLASSEX{
-        .cbSize = sizeof(WNDCLASSEX),
-        .style = 0,
-        .lpfnWndProc = popupWindowProc,
-        .cbClsExtra = 0,
-        .cbWndExtra = 0,
-        .hInstance = hInstance,
-        .hIcon = NULL,
-        .hCursor = NULL,
-        .hbrBackground = NULL,
-        .lpszMenuName = NULL,
-        .lpszClassName = TEXT("UPOPUP"),
-        .hIconSm = NULL,
-    };
-    auto popupWindowClass = CHECK(RegisterClassEx(&popupWindowClassInfo));
-
-    _popup = CHECK(CreateWindowEx(
-        WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-        (LPCTSTR)popupWindowClass,
-        TEXT("U"),
-        WS_POPUP | WS_BORDER,
-        0,
-        0,
-        100,
-        30,
-        NULL,
-        NULL,
-        hInstance,
-        NULL));
+    auto pop = popup::Init{hInstance};
 
     auto hook = HookGuard{WH_KEYBOARD_LL, hookProc};
 

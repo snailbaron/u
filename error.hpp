@@ -30,8 +30,7 @@ T check(
     std::source_location sl = std::source_location::current())
 {
     if (value == 0) {
-        auto error = GetLastError();
-        throw WindowsError{error, message, sl};
+        throw WindowsError{GetLastError(), message, sl};
     }
     return value;
 }
