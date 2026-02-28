@@ -252,10 +252,16 @@
   <ItemGroup>
     <ClInclude Include="error.hpp" />
     <ClInclude Include="popup.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".clang-format" />
-    <None Include=".clang-tidy" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="u.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="u.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

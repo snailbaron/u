@@ -1,6 +1,8 @@
 #include "error.hpp"
 #include "popup.hpp"
 
+#include "resource.h"
+
 #include <windows.h>
 
 #include <array>
@@ -9,6 +11,8 @@
 #include <format>
 #include <iostream>
 #include <utility>
+
+constexpr int WM_U_TRAY = WM_APP + 1;
 
 class HookGuard {
 public:
@@ -174,10 +178,53 @@ LRESULT CALLBACK hookProc(int nCode, WPARAM wparam, LPARAM lparam)
     return CallNextHookEx(NULL, nCode, wparam, lparam);
 }
 
+LRESULT messageWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+{
+    if (umsg == WM_U_TRAY && lparam == WM_LBUTTONUP) {
+        PostQuitMessage(0);
+    }
+
+    return DefWindowProc(hwnd, umsg, wparam, lparam);
+}
 
 int WINAPI WinMain(
     HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 try {
+    auto messageWindowClassInfo = WNDCLASSEX{
+        .cbSize = sizeof(WNDCLASSEX),
+        .lpfnWndProc = messageWindowProc,
+        .hInstance = hInstance,
+        .lpszClassName = TEXT("MESSAGEWINDOW"),
+    };
+    auto popupWindowClass = CHECK(RegisterClassEx(&messageWindowClassInfo));
+
+    auto messageWindow = CHECK(CreateWindowEx(
+        0,
+        (LPCTSTR)popupWindowClass,
+        TEXT("U"),
+        WS_MINIMIZE,
+        0,
+        0,
+        0,
+        0,
+        HWND_MESSAGE,
+        NULL,
+        hInstance,
+        NULL));
+
+    auto appIcon = CHECK(LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APP_ICON)));
+
+    auto notifyIconData = NOTIFYICONDATA{
+        .cbSize = sizeof(NOTIFYICONDATA),
+        .hWnd = messageWindow,
+        .uID = 0,
+        .uFlags = NIF_MESSAGE | NIF_ICON,
+        .uCallbackMessage = WM_U_TRAY,
+        .hIcon = appIcon,
+
+    };
+    CHECK(Shell_NotifyIcon(NIM_ADD, &notifyIconData));
+
     auto pop = popup::Init{hInstance};
 
     auto hook = HookGuard{WH_KEYBOARD_LL, hookProc};

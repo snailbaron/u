@@ -1,4 +1,5 @@
-/u.vcxproj.filters
-/u.vcxproj.user
+*.aps
+*.vcxproj.filters
+*.vcxproj.user
 /u/
 /x64/
