@@ -2,10 +2,12 @@
 
 #include <windows.h>
 
+#include <concepts>
 #include <exception>
 #include <source_location>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 class WindowsError : public std::exception {
 public:
@@ -20,21 +22,18 @@ private:
     std::string _message;
 };
 
-void check(
-    int returnValue,
-    std::string_view message,
-    std::source_location sl = std::source_location::current());
-
 template <class T>
-[[nodiscard]] T* check(
-    T* ptr,
+requires std::integral<T> || std::is_pointer_v<T>
+T check(
+    T value,
     std::string_view message,
     std::source_location sl = std::source_location::current())
 {
-    if (ptr == nullptr) {
-        throw WindowsError{GetLastError(), message, sl};
+    if (value == 0) {
+        auto error = GetLastError();
+        throw WindowsError{error, message, sl};
     }
-    return ptr;
+    return value;
 }
 
 #define CHECK(E) check((E), #E)

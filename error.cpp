@@ -47,11 +47,3 @@ const char* WindowsError::what() const noexcept
 {
     return _message.c_str();
 }
-
-void check(int returnValue, std::string_view message, std::source_location sl)
-{
-    if (!returnValue) {
-        auto error = GetLastError();
-        throw WindowsError{error, message, sl};
-    }
-}
