@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The new version to publish'
+        required: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      - name: Build
+        run: msbuild u.vcxproj /p:Configuration=Release /p:Platform=x64
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+        run: >
+          gh release create "${{ inputs.version }}" "x64/Release/u.exe"
+          --title "${{ inputs.version }}" --generate-notes

@@ -1,1 +1,2 @@
-u.ico filter=lfs diff=lfs merge=lfs -text
+*.ico binary
+*.rc  text working-tree-encoding=UTF-16 eol=CRLF
